@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "commonjs",
+    "baseUrl": "./",
+    "checkJs": false,
+    "jsx": "preserve",
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "paths": { "@/*": ["src/*"] },
+    "types": ["node", "vite/client", "element-plus/global", "unplugin-vue-macros/macros-global"]
+  },
+  "vueCompilerOptions": {
+    "plugins": []
+  },
+  "exclude": ["dist", "node_modules"],
+  "include": ["src/**/*", "types/**/*", "auto-imports.d.ts"]
+}
