@@ -1,5 +1,3 @@
-# sy-patrol-station
-
 ## Project setup
 ```
 npm install
