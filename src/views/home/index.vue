@@ -229,14 +229,14 @@ const onNavChange = (item) => {
 };
 
 const starDes = ref([
-  { key: 'all', label: '综合运势', type: 'star', value: 0 },
-  { key: 'work', label: '事业学业', type: 'star', value: 0 },
-  { key: 'love', label: '爱情运势', type: 'star', value: 0 },
-  { key: 'money', label: '财富运势', type: 'star', value: 0 },
-  { key: 'health', label: '健康指数', value: '' },
-  { key: 'number', label: '幸运数字', value: '' },
-  { key: 'color', label: '幸运颜色', value: '' },
-  { key: 'QFriend', label: '速配星座', value: '' },
+  { key: 'all', label: '综合指数', match: '综合指数', type: 'star', value: 0 },
+  { key: 'work', label: '事业学业', match: '工作指数', type: 'star', value: 0 },
+  { key: 'love', label: '爱情指数', match: '爱情指数', type: 'star', value: 0 },
+  { key: 'money', label: '财富指数', match: '财运指数', type: 'star', value: 0 },
+  { key: 'health', label: '健康指数', match: '健康指数', value: '' },
+  { key: 'number', label: '幸运数字', match: '幸运数字', value: '' },
+  { key: 'color', label: '幸运颜色', match: '幸运颜色', value: '' },
+  { key: 'QFriend', label: '速配星座', match: '贵人星座', value: '' },
   // { key: 'summary', label: '今日概述', value: '' },
 ]);
 const RateColors = ['#99A9BF', '#F7BA2A', '#FF9900'];
@@ -248,14 +248,14 @@ const getAiData = async () => {
   forecastDirection.value.forEach((item) => {
     item.loading = true;
   });
-  const dateStr = forecastMap[forecastType.value];
+  const dateType = forecastMap[forecastType.value];
   Api.postApi(
     '/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-tiny-8k?access_token=24.72e51227ded9c1e3b79f94bd99e02417.2592000.1731740058.282335-115902331',
     {
       messages: [
         {
           role: 'user',
-          content: `${starNav.value.astroname}${dateStr}运势`,
+          content: `${starNav.value.astroname}${dateType}运势`,
         },
       ],
       temperature: 0.95,
@@ -289,29 +289,33 @@ const getForecastData = async () => {
   // starDes.value.forEach((item) => {
   //   item.loading = true;
   // });
-  Api.getApi(
-    '/constellation/getAll',
+  Api.postQsApi(
+    '/star/index',
     {
-      consName: starNav.value.astroname,
-      type: forecastType.value,
-      key: 'c28ef3234057424111f5d2b93364806f',
+      astro: starNav.value.astroname,
+      date: dateStr.value,
+      key: '33380ace36c9d4b3308e69b5802ffb3f',
     },
     {
       baseURL: juheUrl,
+      'Content-Type': 'application/x-www-form-urlencoded',
     }
   )
     .then((res) => {
-      console.log('res: ', res);
-      if (!res?.res?.data) {
+      if (!res.res.data?.result?.list) {
         return;
       }
-      const requestData = res.res.data;
-      console.log('res?.data: ', res?.data);
+      const requestData = res.res.data?.result?.list;
       starDes.value.forEach((item) => {
+        const valueItem = requestData.find((data) => data.type == item.match);
+        if (!valueItem) {
+          return;
+        }
         if (item.type === 'star') {
-          item.value = Math.floor(requestData[item.key] / 20);
+          const numberItem = Number(valueItem.content.replace('%', ''));
+          item.value = Math.floor(numberItem / 20);
         } else {
-          item.value = requestData[item.key];
+          item.value = valueItem.content;
         }
         item.loading = false;
       });
@@ -322,9 +326,9 @@ const getForecastData = async () => {
 };
 
 onMounted(() => {
+  dateStr.value = dayjs().format('YYYY-MM-DD');
   getForecastData();
   getAiData();
-  dateStr.value = dayjs().format('YYYY-MM-DD');
 });
 onBeforeUnmount(() => {});
 </script>

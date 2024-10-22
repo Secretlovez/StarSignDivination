@@ -1,3 +1,4 @@
+import qs from 'qs';
 import axios from './axios';
 
 function getApi(url, params = {}, config = {}) {
@@ -17,4 +18,13 @@ function postApi(url, data = {}, config = {}) {
   });
 }
 
-export { getApi, postApi };
+function postQsApi(url, data = {}, config = {}) {
+  return new Promise((resolve, reject) => {
+    axios
+      .post(url, qs.stringify(data), config)
+      .then((res) => resolve({ res, err: null }))
+      .catch((err) => reject({ res: null, err }));
+  });
+}
+
+export { getApi, postApi, postQsApi };

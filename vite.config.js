@@ -122,7 +122,7 @@ export default defineConfig(({ mode }) => {
           rewrite: (url) => url.replace(/^\/baiduUrl/, ''),
         },
         '/juheUrl': {
-          target: `https://web.juhe.cn/`,
+          target: `https://apis.tianapi.com/`,
           ws: true,
           secure: false,
           changeOrigin: true,

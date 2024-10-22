@@ -9,4 +9,4 @@ export const basePort = isTLS ? 8443 : 8000;
 
 export const baseUrl = isDev ? '/baseUrl' : location.origin;
 export const baiduUrl = isDev ? '/baiduUrl' : 'https://aip.baidubce.com/';
-export const juheUrl = isDev ? '/baseUrl' : 'https://web.juhe.cn/';
+export const juheUrl = isDev ? '/juheUrl' : 'https://apis.tianapi.com/';
