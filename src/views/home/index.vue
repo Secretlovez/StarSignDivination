@@ -82,9 +82,10 @@
 </template>
 
 <script setup name="HomePage">
+import dayjs from 'dayjs';
 import * as Api from '@/api';
 import { arrToMap } from '@/utils';
-import dayjs from 'dayjs';
+import { juheUrl, baiduUrl } from '@/config';
 
 const forecastOption = [
   { key: 'today', value: '今日' },
@@ -262,7 +263,7 @@ const getAiData = async () => {
       penalty_score: 1,
     },
     {
-      baseURL: 'baiduUrl',
+      baseURL: baiduUrl,
     }
   )
     .then((res) => {
@@ -296,7 +297,7 @@ const getForecastData = async () => {
       key: 'c28ef3234057424111f5d2b93364806f',
     },
     {
-      baseURL: 'juheUrl',
+      baseURL: juheUrl,
     }
   )
     .then((res) => {
