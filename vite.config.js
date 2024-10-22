@@ -114,22 +114,25 @@ export default defineConfig(({ mode }) => {
       open: false,
       port: 8000,
       proxy: {
-        '/baseUrl': {
-          target: `https://${env.VITE_BASE_IP}:8443`,
+        '/baiduUrl': {
+          target: `https://aip.baidubce.com/`,
           ws: true,
           secure: false,
           changeOrigin: true,
-          rewrite: (url) => url.replace(/^\/baseUrl/, ''),
+          rewrite: (url) => url.replace(/^\/baiduUrl/, ''),
         },
-        '/wsUrl': {
-          target: `wss://${env.VITE_BASE_IP}:8443/ws`,
+        '/juheUrl': {
+          target: `https://web.juhe.cn/`,
           ws: true,
+          secure: false,
           changeOrigin: true,
-          rewrite: (url) => url.replace(/^\/wsUrl/, ''),
+          rewrite: (url) => url.replace(/^\/juheUrl/, ''),
         },
       },
       headers: {
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Methods': '*',
       },
     },
   };

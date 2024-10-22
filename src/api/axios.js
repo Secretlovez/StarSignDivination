@@ -1,7 +1,9 @@
 import qs from 'qs';
 import axios from 'axios';
+import { baseUrl } from '@/config';
 
 const request = axios.create({
+  baseURL: baseUrl,
   timeout: 60000,
   withCredentials: false,
   paramsSerializer: (params) => qs.stringify(params),
@@ -9,10 +11,6 @@ const request = axios.create({
 
 request.interceptors.request.use(
   (config) => {
-    // 秒级时间戳,10位
-    const timestamp = Date.parse(new Date()) / 1000;
-    config.headers['X-Ca-Timestamp'] = timestamp;
-
     return config;
   },
   (error) => {

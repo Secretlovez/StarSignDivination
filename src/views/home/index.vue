@@ -82,7 +82,8 @@
 </template>
 
 <script setup name="HomePage">
-import * as APi from '@/api';
+import * as Api from '@/api';
+import { arrToMap } from '@/utils';
 import dayjs from 'dayjs';
 
 const forecastOption = [
@@ -124,6 +125,7 @@ const onChangeForecast = (type) => {
   }
   forecastType.value = type;
   getForecastData();
+  getAiData();
 };
 
 const dateStr = ref('');
@@ -218,6 +220,8 @@ const starNav = ref(starNavData[0]);
 const selectModel = ref(false);
 const onNavChange = (item) => {
   starNav.value = item;
+  getForecastData();
+  getAiData();
   setTimeout(() => {
     selectModel.value = false;
   }, 300);
@@ -237,21 +241,35 @@ const starDes = ref([
 const RateColors = ['#99A9BF', '#F7BA2A', '#FF9900'];
 
 const pageLoad = ref(false);
-const getForecastData = async () => {
+const forecastMap = arrToMap(forecastOption);
+const getAiData = async () => {
   pageLoad.value = true;
-  // starDes.value.forEach((item) => {
-  //   item.loading = true;
-  // });
-  APi.getApi('https://web.juhe.cn/constellation/getAll', {
-    consName: starNav.value.astroname,
-    type: forecastType.value,
-    key: 'c28ef3234057424111f5d2b93364806f',
-  })
+  forecastDirection.value.forEach((item) => {
+    item.loading = true;
+  });
+  const dateStr = forecastMap[forecastType.value];
+  Api.postApi(
+    '/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-tiny-8k?access_token=24.72e51227ded9c1e3b79f94bd99e02417.2592000.1731740058.282335-115902331',
+    {
+      messages: [
+        {
+          role: 'user',
+          content: `${starNav.value.astroname}${dateStr}运势`,
+        },
+      ],
+      temperature: 0.95,
+      top_p: 0.7,
+      penalty_score: 1,
+    },
+    {
+      baseURL: 'baiduUrl',
+    }
+  )
     .then((res) => {
       if (!res?.data) {
         return;
       }
-      starDes.value.forEach((item) => {
+      forecastDirection.value.forEach((item) => {
         if (item.type === 'star') {
           item.value = Math.floor(res.data[item.key] / 20);
         } else {
@@ -265,8 +283,46 @@ const getForecastData = async () => {
     });
 };
 
+const getForecastData = async () => {
+  pageLoad.value = true;
+  // starDes.value.forEach((item) => {
+  //   item.loading = true;
+  // });
+  Api.getApi(
+    '/constellation/getAll',
+    {
+      consName: starNav.value.astroname,
+      type: forecastType.value,
+      key: 'c28ef3234057424111f5d2b93364806f',
+    },
+    {
+      baseURL: 'juheUrl',
+    }
+  )
+    .then((res) => {
+      console.log('res: ', res);
+      if (!res?.res?.data) {
+        return;
+      }
+      const requestData = res.res.data;
+      console.log('res?.data: ', res?.data);
+      starDes.value.forEach((item) => {
+        if (item.type === 'star') {
+          item.value = Math.floor(requestData[item.key] / 20);
+        } else {
+          item.value = requestData[item.key];
+        }
+        item.loading = false;
+      });
+    })
+    .finally(() => {
+      pageLoad.value = false;
+    });
+};
+
 onMounted(() => {
   getForecastData();
+  getAiData();
   dateStr.value = dayjs().format('YYYY-MM-DD');
 });
 onBeforeUnmount(() => {});

@@ -1,11 +1,11 @@
 import axios from './axios';
 
-function getApi(url, params = {}) {
-  return new Promise((resolve, reject) => {
+function getApi(url, params = {}, config = {}) {
+  return new Promise((resolve) => {
     axios
-      .get(url, { params })
+      .get(url, { params, ...config })
       .then((res) => resolve({ res, err: null }))
-      .catch((err) => reject({ res: null, err }));
+      .catch((err) => resolve({ res: null, err }));
   });
 }
 function postApi(url, data = {}, config = {}) {
