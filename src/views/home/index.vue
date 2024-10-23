@@ -33,13 +33,39 @@
           </div>
         </div>
         <div class="main-body__summary">
-          <div v-for="item in starDes" :key="item.key" class="star-desc" :rows="5" :loading="item.loading" animated>
-            <div class="star-desc__label">{{ item.label }}</div>
-            <div class="star-desc__value">
-              <el-rate v-if="item.type === 'star'" v-model="item.value" :colors="RateColors" size="small"> </el-rate>
-              <div v-else>{{ item.value }}</div>
+          <template v-if="forecastType !== 'romance'">
+            <div v-for="item in starDes" :key="item.key" class="star-desc">
+              <div class="star-desc__label">{{ item.label }}</div>
+              <div class="star-desc__value">
+                <el-rate v-if="item.type === 'star'" v-model="item.value" :colors="RateColors" size="small" disabled>
+                </el-rate>
+                <div v-else>
+                  <span v-if="!item.loading">{{ item.value }}</span>
+                  <span v-else>
+                    <el-icon class="is-loading"><Loading /> </el-icon>
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
+          </template>
+          <template v-else>
+            <div v-for="item in romanceDes" :key="item.key" class="star-desc">
+              <div class="star-desc__label">{{ item.label }}</div>
+              <div class="star-desc__value">
+                <el-rate v-if="item.type === 'star'" v-model="item.value" :colors="RateColors" size="small" disabled>
+                </el-rate>
+                <div v-else>
+                  <span v-if="!item.loading">{{ item.value }}</span>
+                  <span v-else>
+                    <el-icon class="is-loading"><Loading /> </el-icon>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="main-body__middle">
+          <div class="content">{{ daySummary }}</div>
         </div>
         <div class="main-body__desc">
           <el-skeleton
@@ -52,7 +78,7 @@
           >
             <template #template> </template>
             <template #default>
-              <div class="star-content__des">{{ item.key }}</div>
+              <div class="star-content__des">{{ item.name }}</div>
               <div class="star-content__value">{{ item.value }}</div>
             </template>
           </el-skeleton>
@@ -93,33 +119,39 @@ const forecastOption = [
   { key: 'week', value: '本周' },
   { key: 'month', value: '本月' },
   { key: 'year', value: '本年' },
-  { key: 'romance', value: '爱情' },
+  // { key: 'romance', value: '爱情' },
 ];
 
 const forecastType = ref('today');
+const forecastDate = ref('');
 const onChangeForecast = (type) => {
   switch (type) {
     case 'today':
       dateStr.value = dayjs().format('YYYY-MM-DD');
+      forecastDate.value = dateStr.value;
       break;
     case 'tomorrow':
       dateStr.value = dayjs().add(1, 'day').format('YYYY-MM-DD');
+      forecastDate.value = dateStr.value;
       break;
     case 'week':
       {
         const start = dayjs().startOf('week').format('YYYY-MM-DD');
         const end = dayjs().endOf('week').format('YYYY-MM-DD');
+        forecastDate.value = end;
         dateStr.value = `${start}~${end}`;
       }
       break;
     case 'month':
       dateStr.value = dayjs().format('YYYY-MM');
+      forecastDate.value = dayjs().endOf('month').format('YYYY-MM-DD');
       break;
     case 'year':
       dateStr.value = dayjs().format('YYYY');
+      forecastDate.value = dayjs().endOf('year').format('YYYY-MM-DD');
       break;
     case 'romance':
-      dateStr.value = dayjs().format('YYYY-MM-DD');
+      dateStr.value = dayjs().format('YYYY');
       break;
     default:
       break;
@@ -132,15 +164,12 @@ const onChangeForecast = (type) => {
 const dateStr = ref('');
 
 const forecastDirection = ref([
-  { name: '综合运势', value: '', loading: true },
-  { name: '爱情运势', value: '', loading: true },
-  { name: '事业学业', value: '', loading: true },
-  { name: '财富运势', value: '', loading: true },
-  { name: '爱情运势', value: '', loading: true },
-  { name: '健康指数', value: '', loading: true },
-  { name: '幸运颜色', value: '', loading: true },
-  { name: '幸运数字', value: '', loading: true },
-  { name: '速配星座', value: '', loading: true },
+  { name: '综合运势', match: '运势概括', value: '', loading: true },
+  { name: '爱情运势', match: '爱情方面', value: '', loading: true },
+  { name: '事业学业', match: '事业方面', value: '', loading: true },
+  { name: '财富运势', match: '财运方面', value: '', loading: true },
+  { name: '健康运势', match: '健康方面', value: '', loading: true },
+  { name: '人际关系', match: '感情方面', value: '', loading: true },
 ]);
 
 const starNavData = [
@@ -237,8 +266,9 @@ const starDes = ref([
   { key: 'number', label: '幸运数字', match: '幸运数字', value: '' },
   { key: 'color', label: '幸运颜色', match: '幸运颜色', value: '' },
   { key: 'QFriend', label: '速配星座', match: '贵人星座', value: '' },
-  // { key: 'summary', label: '今日概述', value: '' },
+  // { key: 'summary', label: '今日概述', match: '今日概述', value: '' },
 ]);
+const daySummary = ref('');
 const RateColors = ['#99A9BF', '#F7BA2A', '#FF9900'];
 
 const pageLoad = ref(false);
@@ -249,51 +279,52 @@ const getAiData = async () => {
     item.loading = true;
   });
   const dateType = forecastMap[forecastType.value];
-  Api.postApi(
-    '/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-tiny-8k?access_token=24.72e51227ded9c1e3b79f94bd99e02417.2592000.1731740058.282335-115902331',
-    {
-      messages: [
-        {
-          role: 'user',
-          content: `${starNav.value.astroname}${dateType}运势`,
-        },
-      ],
-      temperature: 0.95,
-      top_p: 0.7,
-      penalty_score: 1,
-    },
-    {
-      baseURL: baiduUrl,
-    }
-  )
-    .then((res) => {
-      if (!res?.data) {
-        return;
+  for (let i = 0; i < forecastDirection.value.length; i++) {
+    Api.postApi(
+      '/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-tiny-8k?access_token=24.72e51227ded9c1e3b79f94bd99e02417.2592000.1731740058.282335-115902331',
+      {
+        messages: [
+          {
+            role: 'user',
+            content: `${starNav.value.astroname}${dateType}${forecastDirection.value[i].name}`,
+          },
+        ],
+        temperature: 0.95,
+        top_p: 0.7,
+        penalty_score: 1,
+      },
+      {
+        baseURL: baiduUrl,
       }
-      forecastDirection.value.forEach((item) => {
-        if (item.type === 'star') {
-          item.value = Math.floor(res.data[item.key] / 20);
-        } else {
-          item.value = res.data[item.key];
+    )
+      .then((res) => {
+        if (!res.res?.data?.result) {
+          forecastDirection.value[i].value = '-';
+          forecastDirection.value[i].loading = false;
+          return;
         }
-        item.loading = false;
+        const direction = res.res.data.result.split('\n\n');
+        const trimmedArray = direction.slice(1, -1);
+        forecastDirection.value[i].value = trimmedArray.reduce((acc, curr) => acc + curr, '');
+        forecastDirection.value[i].loading = false;
+        forecastDirection.value[i].show = true;
+      })
+      .finally(() => {
+        pageLoad.value = false;
       });
-    })
-    .finally(() => {
-      pageLoad.value = false;
-    });
+  }
 };
 
 const getForecastData = async () => {
   pageLoad.value = true;
-  // starDes.value.forEach((item) => {
-  //   item.loading = true;
-  // });
+  starDes.value.forEach((item) => {
+    item.loading = true;
+  });
   Api.postQsApi(
     '/star/index',
     {
       astro: starNav.value.astroname,
-      date: dateStr.value,
+      date: forecastDate.value || dateStr.value,
       key: '33380ace36c9d4b3308e69b5802ffb3f',
     },
     {
@@ -319,11 +350,40 @@ const getForecastData = async () => {
         }
         item.loading = false;
       });
+      starDes.value.forEach((item) => {
+        if (!item.loading) {
+          return;
+        }
+        if (item.type === 'star') {
+          item.value = 0;
+        } else {
+          item.value = '-';
+        }
+        item.loading = false;
+      });
     })
     .finally(() => {
       pageLoad.value = false;
     });
 };
+
+const romanceDes = ref([
+  { key: 'overall', label: '综合运势', match: '综合运势', type: 'star', value: 0 },
+  { key: 'female', label: '女生指数', match: '女生指数', type: 'star', value: 0 },
+  { key: 'male', label: '男生指数', match: '男生指数', type: 'star', value: 0 },
+]);
+// const getLoveData = () => {
+//   Api.postQsApi(
+//     '/love/index',
+//     {
+//       key: '33380ace36c9d4b3308e69b5802ffb3f',
+//     },
+//     {
+//       baseURL: juheUrl,
+//       'Content-Type': 'application/x-www-form-urlencoded',
+//     }
+//   );
+// };
 
 onMounted(() => {
   dateStr.value = dayjs().format('YYYY-MM-DD');
@@ -342,9 +402,11 @@ onBeforeUnmount(() => {});
 
   .main-body {
     position: relative;
-    margin: 10vh 0 0 0;
+    margin: 10vh 0 10vh 0;
+    display: flex;
+    flex-direction: column;
     width: calc(100vw - 10%);
-    height: 100%;
+    height: auto;
     background-image: linear-gradient(to top, #dfe9f3 0%, white 30%);
     border-radius: 48px 48px 28px 28px;
     padding: 38px 15px 30px;
@@ -359,6 +421,8 @@ onBeforeUnmount(() => {});
       justify-content: center;
       width: 100%;
       height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
       margin: 0;
       background: {
         image: url(@/assets/images/bg.png);
@@ -430,15 +494,15 @@ onBeforeUnmount(() => {});
       .forecast-btn {
         flex: 1;
         cursor: pointer;
-        font-size: 16px;
+        font-size: 14px;
         text-align: center;
-        padding: 6px 0px;
+        padding: 6px 8px;
         border-radius: 32px;
         background: #efecff;
         color: #735afd;
         word-break: keep-all;
         & + .forecast-btn {
-          margin-left: 10px;
+          margin-left: 5px;
         }
         &.active {
           color: white;
@@ -450,12 +514,13 @@ onBeforeUnmount(() => {});
         position: absolute;
         right: -15px;
         bottom: -12px;
+
         div {
           background: linear-gradient(90deg, #735afd 0%, #b63af3 100%);
           padding: 4px 20px;
           border-radius: 80px 0px 0px 80px;
           color: white;
-          font-size: 14px;
+          font-size: 12px;
           display: inline-block;
         }
       }
@@ -477,11 +542,79 @@ onBeforeUnmount(() => {});
         color: #181f64;
         font-size: 14px;
         &__label {
+          white-space: nowrap;
           margin-right: 10px;
+        }
+        &__value {
+          color: #735afd;
         }
       }
       .el-rate {
         height: 28px;
+
+        .el-rate__icon {
+          font-size: 14px;
+          margin-right: 0;
+        }
+      }
+    }
+    &__middle {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 24px;
+      margin-bottom: 10px;
+
+      .content {
+        max-width: 50%;
+        color: #735afd;
+        background-color: #dfe9f3;
+      }
+
+      &::after {
+        position: absolute;
+        content: '';
+        top: 50%;
+        left: 50%;
+        width: 50%;
+        height: 2px;
+        border-bottom: 2px dashed transparent;
+        background: linear-gradient(white, white) padding-box,
+          repeating-linear-gradient(-45deg, #eae9ef 0, #eae9ef 0.25em, white 0, white 0.75em);
+      }
+      &::before {
+        position: absolute;
+        content: '';
+        top: 50%;
+        left: 0;
+        width: 50%;
+        height: 2px;
+        border-bottom: 2px dashed transparent;
+        background: linear-gradient(white, white) padding-box,
+          repeating-linear-gradient(-45deg, #eae9ef 0, #eae9ef 0.25em, white 0, white 0.75em);
+      }
+    }
+    &__desc {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+
+      .star-content__des {
+        margin-bottom: 18px;
+        width: 50%;
+        color: #735afd;
+        font-size: 20px;
+        font-weight: bolder;
+      }
+      .star-content__value {
+        margin-bottom: 18px;
+        width: 100%;
+        // color: #735afd;
+        font-size: 16px;
+        padding-bottom: 20px;
+        border-bottom: 2px dashed #eae9ef;
       }
     }
 
