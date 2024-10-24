@@ -1,20 +1,32 @@
-name: Deploy Vue3 App to GitHub Pages by branch
+name: Deploy Vue3 App site to Pages by action
 
 on:
+  # 使用 `master` 分支作为默认分支
   push:
-    branches:
-      - master # 根据实际的主分支名称修改
+    branches: [master]
 
+  # 允许你从 Actions 选项卡手动运行此工作流程
+  workflow_dispatch:
+
+# 设置 GITHUB_TOKEN 的权限，以允许部署到 GitHub Pages
 permissions:
-  contents: write # 给予权限
+  contents: read
+  pages: write
+  id-token: write
+
+# 只允许同时进行一次部署，跳过正在运行和最新队列之间的运行队列
+# 但是，不要取消正在进行的运行，因为我们希望允许这些生产部署完成
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  # 构建工作
+  build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4 # 从仓库复制一份代码
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -22,16 +34,28 @@ jobs:
           node-version: '20' # 使用适合的 Node.js 版本
 
       - name: Enable yarn
-        run: corepack enable # 启用 pnpm 或 yarn
+        run: corepack enable
 
       - name: Install Dependencies
         run: yarn install # 或 yarn install，根据你的偏好选择
 
       - name: Generate Static Site
-        run: yarn generate # 生成静态站点的命令
+        run: yarn build # 或者其他生成静态站点的命令
 
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4 # 这个 action 能将你的构建产物，作为新增内容提交到 gh-pages 分支
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          branch: gh-pages # The branch the action should deploy to.
-          folder: dist # The folder the action should deploy.
+          path: dist
+
+  # 部署工作
+  deploy:
+    environment: # 部署环境
+      name: github-pages # 部署到 GitHub Pages
+      url: ${{ steps.deployment.outputs.page_url }} # 部署后的 URL
+    needs: build # 郈接到构建工作
+    runs-on: ubuntu-latest # 运行环境
+    name: Deploy # 工作名称
+    steps: # 步骤
+      - name: Deploy to GitHub Pages # 部署到 GitHub Pages
+        id: deployment # 步骤 ID
+        uses: actions/deploy-pages@v4 # 使用的 action
