@@ -279,9 +279,10 @@ const getAiData = async () => {
     item.loading = true;
   });
   const dateType = forecastMap[forecastType.value];
+  const token = await getTokenApi();
   for (let i = 0; i < forecastDirection.value.length; i++) {
     Api.postApi(
-      '/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-tiny-8k?access_token=24.72e51227ded9c1e3b79f94bd99e02417.2592000.1731740058.282335-115902331',
+      `/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-tiny-8k?access_token=${token}`,
       {
         messages: [
           {
@@ -313,6 +314,23 @@ const getAiData = async () => {
         pageLoad.value = false;
       });
   }
+};
+const getTokenApi = async () => {
+  if (sessionStorage.getItem('token')) {
+    return sessionStorage.getItem('token');
+  }
+  return await Api.getApi(
+    '/tokenApi/api/token',
+    {},
+    {
+      baseURL: 'http://112.124.51.234:8080/',
+    }
+  ).then((res) => {
+    if (res.res.data.token) {
+      sessionStorage.setItem('token', res.res.data.token);
+    }
+    return res.res.data.token;
+  });
 };
 
 const getForecastData = async () => {
